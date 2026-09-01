@@ -23,6 +23,7 @@ __attributes = {
     'DinoV2FeatureExtractor': 'flow_matching.mixins.image_conditioned',
     'DinoV3FeatureExtractor': 'flow_matching.mixins.image_conditioned',
     'DinoV3ProjFeatureExtractor': 'flow_matching.mixins.image_conditioned_proj',
+    'DinoV3ProjMultiViewFeatureExtractor': 'flow_matching.mixins.image_conditioned_proj',
     'DinoV3VaeProjFeatureExtractor': 'flow_matching.mixins.image_conditioned_proj',
     'ImageConditionedProjMixin': 'flow_matching.mixins.image_conditioned_proj',
 }

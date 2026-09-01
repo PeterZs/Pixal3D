@@ -31,6 +31,7 @@
 
 ## ✨ News
 
+- **Sep 2026**: Release multi-view inference code. 🎥
 - **May 2026**: Release training code and data preparation toolkit. 🔧
 - **May 2026**: Release the improved version based on [Trellis.2](https://github.com/microsoft/TRELLIS.2) backbone. 💪
 - **May 2026**: Release inference code and online demo. 🤗
@@ -111,6 +112,49 @@ python inference.py --image assets/images/0_img.png --output ./output.glb --reso
 > ```bash
 > ATTN_BACKEND=sdpa python inference.py --image assets/images/0_img.png --output ./output.glb --low_vram
 > ```
+
+#### Multi-View Inference
+
+When you have several views of the same object — a few shots taken around it, or the output of a multi-view diffusion model — `inference_mv.py` conditions the cascade on all of them at once:
+
+```bash
+python inference_mv.py --views_dir assets/mv_images/example --output ./output_mv.glb
+```
+
+This path uses a separate set of multi-view weights (`ckpts/*_mv`, selected by `pipeline_mv.json`) from the same Hugging Face repo. `--low_vram`, `--resolution` and `ATTN_BACKEND` behave exactly as above, and `--num_views N` restricts the run to the first N views.
+
+**Input format.** A directory of views plus a `transforms.json` describing each view's camera:
+
+```
+assets/mv_images/example/
+├── transforms.json
+├── view00_azim000.png     # alpha is taken as the object mask when present,
+├── view01_azim090.png     # otherwise the view is segmented automatically
+├── view02_azim180.png
+└── view03_azim270.png
+```
+
+Views need not be RGBA — any view without an alpha channel is matted with the same background-removal model `inference.py` uses. They are never cropped or rescaled, so the framing you provide has to be the framing the cameras describe.
+
+```json
+{
+  "camera_angle_x": 0.3490658503988659,
+  "mesh_scale": 1.0,
+  "frames": [
+    {
+      "file_path": "view00_azim000.png",
+      "name": "azim000",
+      "transform_matrix": [[1, 0, 0, 0], [0, 0, -1, -3.1192], [0, 1, 0, 0], [0, 0, 0, 1]]
+    }
+  ]
+}
+```
+
+`transform_matrix` is a 4×4 camera-to-world matrix and `camera_angle_x` is the horizontal FOV in radians — the same Blender/NeRF convention the training renders use, so a dataset `transforms.json` works as-is. The world is Z-up, and each camera looks along its own −Z axis with its own +Y as up. `camera_angle_x` may also be given per frame, which overrides the top-level value.
+
+> **No camera parameters?** If your views are the usual orbit — four images taken every 90° around the object at eye level — reuse the shipped `assets/mv_images/example/transforms.json` as-is and just point each `file_path` at your own image. It already encodes exactly that rig: azimuths 0°/90°/180°/270°, elevation 0°, 20° FOV.
+
+> **The first frame is the main view and should be the canonical front view** (camera at `(0, -d, 0)` looking at the origin with world +Z up), since every other view is placed relative to it. `inference_mv.py` warns if it is not.
 
 ### Web Demo
 
